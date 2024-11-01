@@ -1,0 +1,25 @@
+FROM ubuntu:22.04
+
+# Update default packages
+RUN apt-get update
+
+# Get Ubuntu packages
+RUN apt-get install -y \
+    build-essential \
+    curl \
+    wget \
+    git
+
+# Update new packages
+RUN apt-get update
+
+# Get Rust
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN cargo install cargo-fuzz
+
+RUN mkdir /security
+ADD / /security
+RUN chmod +x /security/run_docker.sh
+
+ENTRYPOINT ["/security/run_docker.sh"]
