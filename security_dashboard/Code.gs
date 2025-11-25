@@ -6,13 +6,23 @@
  * to only the current spreadsheet.
  */
 
-// --- CONFIGURATION ---
-// Go to Script Editor -> Project Settings -> Script Properties and add the following:
-// GITHUB_ENTERPRISE_URL: Your GitHub Enterprise URL (e.g., https://github.yourcompany.com)
-// GITHUB_ORG: The name of your GitHub organization.
-// GITHUB_TOKEN: Your GitHub Personal Access Token with 'repo' and 'read:org' scopes.
-// SHEET_ID: The ID of your Google Sheet.
-// SHEET_NAME: The name of the sheet/tab where data will be imported.
+/**
+ * Initial setup: Add the following sheet properties with the following values
+ * SHEET_ID: <new sheetid>
+ * ALL_VULNS_SHEET_NAME: AllVulnerabilities_Normalized
+ * AUDIT_SHEET_NAME: Audit_Import
+ * GH_CODESCANNING_SHEET_NAME: GHAS_CodeScanning_Import
+ * GH_DEPENDABOT_SHEET_NAME: GHAS_Dependabot_Import
+ * GH_SECRETSSSCANNING_SHEET_NAME: GHAS_Secrets_Import
+ * GITHUB_ENTERPRISE_URL: https://github.com/enterprises/stellar-development-foundation
+ * GITHUB_ORG: stellar
+ * JIRA_BUGBOUNTY_SHEET_NAME: Jira_BugBounty_Import
+ * JIRA_EMAIL: <your Jira API email>
+ * JIRA_URL: https://stellarorg.atlassian.net 
+ * 
+ */
+
+
 
 //Data Normalization Constants
 const SEV_CRITICAL = 'Critical';
@@ -25,11 +35,13 @@ const SEV_LOW = 'Low';
  */
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('GitHub Vulnerabilities')
-    .addItem('Import All GH Vulnerability Data', 'importVulnerabilitiesToSheet')
+    .createMenu('Vulnerability Imports')
+    .addItem('Import All Vulnerability Sources', 'importVulnerabilitiesToSheet')
     .addItem('Import GH Dependabot Vulnerabilities', 'importDependabotVulnerabilitiesToSheet')
     .addItem('Import GH Secrets Scanning Vulnerabilities', 'importSecretScanningVulnerabilitiesToSheet')
     .addItem('Import GH CodeScanning Vulnerabilities', 'importCodeScanningVulnerabilitiesToSheet')
+    .addItem('Import Jira Bug Bounty Vulnerabilities', 'importBugBountyVulnerabilitiesToSheet')
+    .addItem('Synch all sources to Normalized Vulnerability Tab','dataSynch_AllVulnerabilities')
     .addToUi();
 }
 
@@ -39,9 +51,28 @@ function onOpen() {
  */
 function getScriptProperties() {
   const properties = PropertiesService.getScriptProperties();
+  const userProperties = PropertiesService.getUserProperties();
   const githubEnterpriseUrl = properties.getProperty('GITHUB_ENTERPRISE_URL');
   const githubOrg = properties.getProperty('GITHUB_ORG');
-  const githubToken = properties.getProperty('GITHUB_TOKEN');
+  //const githubToken = properties.getProperty('GITHUB_TOKEN');
+  let githubToken = userProperties.getProperty('GITHUB_TOKEN');
+  if (githubToken === null) {
+    const ui = SpreadsheetApp.getUi();
+    const result = ui.prompt(
+        'Setup Required',
+        `The GitHub token is not set. Please enter your classic API token to continue.`,
+        ui.ButtonSet.OK_CANCEL);
+
+    // Check if the user clicked 'OK' and provided a value.
+    if (result.getSelectedButton() == ui.Button.OK && result.getResponseText() !== '') {
+      // Get the user's input.
+      githubToken = result.getResponseText();
+      
+      // 6. Store the new value.
+      userProperties.setProperty('GITHUB_TOKEN', githubToken);
+      Logger.log(`Property GITHUB_TOKEN has been set and stored.`);
+    }
+  }
   const sheetId = properties.getProperty('SHEET_ID');
   const dependabotSheetName = properties.getProperty('GH_DEPENDABOT_SHEET_NAME');
   const secretsScanningSheetName = properties.getProperty('GH_SECRETSSCANNING_SHEET_NAME');
@@ -239,8 +270,34 @@ function getVulnerabilitiesForRepo(apiUrl, orgName, repoName, token) {
 function importVulnerabilitiesToSheet() {
   importDependabotVulnerabilitiesToSheet();
   importSecretScanningVulnerabilitiesToSheet();
+  importCodeScanningVulnerabilitiesToSheet();
+  importBugBountyVulnerabilitiesToSheet();
+  dataSynch_AllVulnerabilities();
 
 }
+
+const COL_DP_TEAM_NAME = 1;
+const COL_DP_PROJECT_NAME = 2;
+const COL_DP_REPOSITORY = 3;
+const COL_DP_PACKAGE = 4;
+const COL_DP_SEVERITY = 5;
+const COL_DP_SUMMARY = 6;
+const COL_DP_CREATED_AT = 7;
+const COL_DP_AUTO_DISMISSED_AT = 8;
+const COL_DP_DISMISSED_AT = 9;
+const COL_DP_DISMISS_COMMENT = 10;
+const COL_DP_DISMISSER_NAME = 11;
+const COL_DP_DISMISS_REASON = 12;
+const COL_DP_FIXED_AT = 13;
+const COL_DP_STATUS = 14;
+const COL_DP_GHSA_ID = 15;
+const COL_DP_REPO_LINK = 16;
+const COL_DP_VULNERABLE_FILENAME = 17;
+const COL_DP_VULNERABLE_FILEPATH = 18;
+const COL_DP_VULNERABLE_REQUIREMENTS = 19;
+const COL_DP_DAYS_OPENED = 20;
+const COL_DP_REMEDIATION_DEADLINE = 21;
+const COL_DP_SOURCE = 22;
 
 function importDependabotVulnerabilitiesToSheet() {
   const ui = SpreadsheetApp.getUi();
@@ -265,12 +322,15 @@ function importDependabotVulnerabilitiesToSheet() {
     for (let i = 0; i < repositories.length; i++) {
     //for (let i = 0; i < 15; i++) {
         const repoName = repositories[i];
-        const progressHtml = `<p>Processing repo ${i + 1} of ${repositories.length}: ${repoName}</p>`;
-        ui.showSidebar(HtmlService.createHtmlOutput(progressHtml).setTitle('Import Progress'));
+        //const progressHtml = `<p>Processing repo ${i + 1} of ${repositories.length}: ${repoName}</p>`;
+        if((i+1)%5 == 0) {  //Only update status every 5 repos so as not to overload updates
+          ui.showSidebar(HtmlService.createHtmlOutput(`<p>Processing repo ${i + 1} of ${repositories.length}: ${repoName}</p>`).setTitle('Import Progress'));
+        }
 
         const vulnerabilities = getVulnerabilitiesForRepo(apiUrl, githubOrg, repoName, githubToken);
         vulnerabilities.forEach(vuln => {
             allVulnerabilities.push([
+                "PlaceholderTeamName",
                 "PlaceholderProjectName",
                 repoName,
                 vuln.securityVulnerability.package.name,
@@ -305,42 +365,29 @@ function importDependabotVulnerabilitiesToSheet() {
 
     // Clear existing data and set headers
     sheet.clear();
-    const headers = ['Project Name','Repository', 'Package', 'Severity', 'Summary', 'Created At', 'Auto Dismissed At', 'Dismissed At', 'Dismiss Comment', 'Dismisser Name', 'Dismiss Reason', 'FixedAt', 'Status', 'GHSA ID', 'Repo Link', 'Vulnerable Filename', 'Vulnerable Filepath', 'Vulnerable Requirements', 'Days Opened', 'Remediation Deadline', 'Source'];
+    const headers = ['Team Name', 'Project Name','Repository', 'Package', 'Severity', 'Summary', 'Created At', 'Auto Dismissed At', 'Dismissed At', 'Dismiss Comment', 'Dismisser Name', 'Dismiss Reason', 'FixedAt', 'Status', 'GHSA ID', 'Repo Link', 'Vulnerable Filename', 'Vulnerable Filepath', 'Vulnerable Requirements', 'Days Opened', 'Remediation Deadline', 'Source'];
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
-    const COL_DP_PROJECT_NAME = 1;
-    const COL_DP_REPOSITORY = 2;
-    const COL_DP_PACKAGE = 3;
-    const COL_DP_SEVERITY = 4;
-    const COL_DP_SUMMARY = 5;
-    const COL_DP_CREATED_AT = 6;
-    const COL_DP_AUTO_DISMISSED_AT = 7;
-    const COL_DP_DISMISSED_AT = 8;
-    const COL_DP_DISMISS_COMMENT = 9;
-    const COL_DP_DISMISSER_NAME = 10;
-    const COL_DP_DISMISS_REASON = 11;
-    const COL_DP_FIXED_AT = 12;
-    const COL_DP_STATUS = 13;
-    const COL_DP_GHSA_ID = 14;
-    const COL_DP_REPO_LINK = 15;
-    const COL_DP_VULNERABLE_FILENAME = 16;
-    const COL_DP_VULNERABLE_FILEPATH = 17;
-    const COL_DP_VULNERABLE_REQUIREMENTS = 18;
-    const COL_DP_DAYS_OPENED = 19;
-    const COL_DP_REMEDIATION_DEADLINE = 20;
-    const COL_DP_SOURCE = 21;
+    
 
 
 
     if (allVulnerabilities.length > 0) {
       sheet.getRange(2, 1, allVulnerabilities.length, headers.length).setValues(allVulnerabilities);
 
-      //Set Project Repo Mapping
-      sheet.getRange(2,COL_DP_PROJECT_NAME,allVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C2:R300C2,\'Project-Repo Mappings\'!R1C1:R300C1)),\"\",xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C2:R300C2,\'Project-Repo Mappings\'!R1C1:R300C1))");   //Set reference formulas for calculated data - Project name lookup
+      ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating Team <-> Repo mappings!</p>').setTitle('Import Progress'));
+      //Set Team Repo Mapping
+      sheet.getRange(2,COL_DP_TEAM_NAME,allVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[2],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C1:R300C1)),\"\",xlookup(R[0]C[2],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C1:R300C1))");   //Set reference formulas for calculated data - Project name lookup
 
+      ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating Project <-> Repo mappings!</p>').setTitle('Import Progress'));
+      //Set Project Repo Mapping
+      sheet.getRange(2,COL_DP_PROJECT_NAME,allVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C2:R300C2)),\"\",xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C2:R300C2))");   //Set reference formulas for calculated data - Project name lookup
+
+      ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating days open calculations!</p>').setTitle('Import Progress'));
       //Set Days Opened calculation - =If(Not(isBlank(H2)),datedif(F2,H2,"D"),If(Not(isBlank(L2)),datedif(F2,L2,"D"),If(Not(isBlank(G2)),datedif(F2,G2,"D"), datedif(F2,today(),"D"))))
       sheet.getRange(2,COL_DP_DAYS_OPENED,allVulnerabilities.length,1).setFormulaR1C1('=If(Not(isBlank(R[0]C[-11])),datedif(R[0]C[-13],R[0]C[-11],"D"),If(Not(isBlank(R[0]C[-7])),datedif(R[0]C[-13],R[0]C[-7],"D"),If(Not(isBlank(R[0]C[-12])),datedif(R[0]C[-13],R[0]C[-12],"D"),datedif(R[0]C[-13],today(),"D"))))');
 
+      ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating remediation deadline calculations!</p>').setTitle('Import Progress'));
       //Set Remediation Deadline Calculation - =F2+XLOOKUP(D2,RemediationPolicyTimelines!$A$1:$A$4,RemediationPolicyTimelines!$B$1:$B$4)
       sheet.getRange(2,COL_DP_REMEDIATION_DEADLINE,allVulnerabilities.length,1).setFormulaR1C1('=R[0]C[-14]+XLOOKUP(R[0]C[-16],RemediationPolicyTimelines!R1C1:R4C1,RemediationPolicyTimelines!R1C2:R4C2)');
     }
@@ -352,6 +399,7 @@ function importDependabotVulnerabilitiesToSheet() {
     //var valueToDelete = new Date('');
     var valueToDelete = new Date(null);
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up AutoDismissedAt empty dates!</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Auto Dismissed At' Column
     columnNumber = COL_DP_AUTO_DISMISSED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
@@ -364,7 +412,7 @@ function importDependabotVulnerabilitiesToSheet() {
       }
     }
 
-    
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up DismissedAt empty dates!</p>').setTitle('Import Progress'));    
     //Clear out any default blank dates in 'Dismissed At' Column
     columnNumber = COL_DP_DISMISSED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
@@ -378,6 +426,7 @@ function importDependabotVulnerabilitiesToSheet() {
       }
     }
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up FixedAt empty dates!</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Fixed At' Column
     columnNumber = COL_DP_FIXED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
@@ -390,11 +439,14 @@ function importDependabotVulnerabilitiesToSheet() {
       }
     }
 
+    
+
+
     //Set Custom Formulas for this import 
 
-    
-    ui.showSidebar(HtmlService.createHtmlOutput('<p>Import complete!</p>').setTitle('Import Progress'));
-    ui.alert('Success', 'Vulnerability data has been imported successfully.', ui.ButtonSet.OK);
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Import complete!</p>').setTitle('Dependabot Import Progress'));
+    ui.alert('Success', 'Dependabot Vulnerability data has been imported successfully.', ui.ButtonSet.OK);
 
   } catch (e) {
     ui.alert('Error', e.message, ui.ButtonSet.OK);

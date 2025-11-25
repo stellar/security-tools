@@ -47,6 +47,24 @@ function getCodeScanningVulnerabilitiesForOrg(orgName, token) {
 
 }
 
+const COL_CS_TEAM_NAME = 1;
+const COL_CS_PROJECT_NAME = 2;
+const COL_CS_REPO_NAME = 3;
+const COL_CS_SEVERITY = 4;
+const COL_CS_SUMMARY = 5;
+const COL_CREATED_AT = 6;
+const COL_CS_DISMISSED_AT = 7;
+const COL_CS_DISMISS_COMMENT = 8;
+const COL_CS_DISMISSER_NAME = 9;
+const COL_CS_DISMISS_REASON = 10;
+const COL_CS_FIXED_AT = 11;
+const COL_CS_STATUS = 12;
+const COL_CS_ID_NUMBER = 13;
+const COL_CS_REPO_LINK = 14;
+const COL_CS_DAYS_OPENED = 15;
+const COL_CS_REMEDIATION_DEADLINE = 16;
+const COL_CS_SOURCE = 17;
+
 function importCodeScanningVulnerabilitiesToSheet() {
   const ui = SpreadsheetApp.getUi();
   try{
@@ -58,7 +76,8 @@ function importCodeScanningVulnerabilitiesToSheet() {
     const vulnerabilities = getCodeScanningVulnerabilitiesForOrg(githubOrg, githubToken);
     vulnerabilities.forEach(vuln => {
       allCodeScanningVulnerabilities.push([
-        "PlaceholderProjectName",
+        'Placeholder - TeamName',
+        'Placeholder - ProjectName',
         vuln.repository.name,
         vuln.rule.security_severity_level,
         vuln.rule.description,
@@ -79,34 +98,26 @@ function importCodeScanningVulnerabilitiesToSheet() {
     const spreadsheet = SpreadsheetApp.openById(sheetId);
     const sheet = spreadsheet.getSheetByName(codeScanningSheetName);
     sheet.clear();
-    const headers = ['Project Name', 'Repo Name', 'Severity', 'Summary', 'Created At', 'Dismissed At', 'Dismiss Comment', 'Dismisser Name', 'Dismiss Reason', 'Fixed At', 'Status', 'ID Number', 'Repo Link', 'Days Opened', 'Remediation Deadline', 'Source' ];
+    const headers = ['Team Name', 'Project Name', 'Repo Name', 'Severity', 'Summary', 'Created At', 'Dismissed At', 'Dismiss Comment', 'Dismisser Name', 'Dismiss Reason', 'Fixed At', 'Status', 'ID Number', 'Repo Link', 'Days Opened', 'Remediation Deadline', 'Source' ];
 
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.getRange(2,1, allCodeScanningVulnerabilities.length, headers.length).setValues(allCodeScanningVulnerabilities);
     
-    const COL_CS_PROJECT_NAME = 1;
-    const COL_CS_REPO_NAME = 2;
-    const COL_CS_SEVERITY = 3;
-    const COL_CS_SUMMARY = 4;
-    const COL_CREATED_AT = 5;
-    const COL_CS_DISMISSED_AT = 6;
-    const COL_CS_DISMISS_COMMENT = 7;
-    const COL_CS_DISMISSER_NAME = 8;
-    const COL_CS_DISMISS_REASON = 9;
-    const COL_CS_FIXED_AT = 10;
-    const COL_CS_STATUS = 11;
-    const COL_CS_ID_NUMBER = 12;
-    const COL_CS_REPO_LINK = 13;
-    const COL_CS_DAYS_OPENED = 14;
-    const COL_CS_REMEDIATION_DEADLINE = 15;
-    const COL_CS_SOURCE = 16;
     
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating Team <-> Repo mapping...').setTitle('Import Progress'));
+    //Set Team Repo Mapping
+    sheet.getRange(2,COL_CS_TEAM_NAME,allCodeScanningVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[2],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C1:R300C1)),\"\",xlookup(R[0]C[2],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C1:R300C1))");   //Set reference formulas for calculated data - Team name lookup
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating Project <-> Repo mapping...').setTitle('Import Progress'));
     //Set Project Repo Mapping
-    sheet.getRange(2,COL_CS_PROJECT_NAME,allCodeScanningVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C2:R300C2,\'Project-Repo Mappings\'!R1C1:R300C1)),\"\",xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C2:R300C2,\'Project-Repo Mappings\'!R1C1:R300C1))");   //Set reference formulas for calculated data - Project name lookup
+    sheet.getRange(2,COL_CS_PROJECT_NAME,allCodeScanningVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C2:R300C2)),\"\",xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C2:R300C2))");   //Set reference formulas for calculated data - Project name lookup
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating days opened calculation...').setTitle('Import Progress'));
     //Set Days Opened calculation - =If(Not(isBlank(DISMISSED_AT)),datedif(CREATED_AT,DISMISSED_AT,"D"),If(Not(isBlank(FIXED_AT)),datedif(CREATED_AT,FIXED_AT,"D"), datedif(CREATED_AT,today(),"D")))
-      sheet.getRange(2,COL_CS_DAYS_OPENED,allCodeScanningVulnerabilities.length,1).setFormulaR1C1('=If(Not(isBlank(R[0]C[-8])),datedif(R[0]C[-9],R[0]C[-8],"D"),If(Not(isBlank(R[0]C[-4])),datedif(R[0]C[-9],R[0]C[-4],"D"),datedif(R[0]C[-9],today(),"D")))');
+    sheet.getRange(2,COL_CS_DAYS_OPENED,allCodeScanningVulnerabilities.length,1).setFormulaR1C1('=If(Not(isBlank(R[0]C[-8])),datedif(R[0]C[-9],R[0]C[-8],"D"),If(Not(isBlank(R[0]C[-4])),datedif(R[0]C[-9],R[0]C[-4],"D"),datedif(R[0]C[-9],today(),"D")))');
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating remediation deadline calculation...').setTitle('Import Progress'));
     //Set Remediation Deadline Calculation - =CREATED_AT+XLOOKUP(SEVERITY,RemediationPolicyTimelines!$A$1:$A$4,RemediationPolicyTimelines!$B$1:$B$4)
     sheet.getRange(2,COL_CS_REMEDIATION_DEADLINE,allCodeScanningVulnerabilities.length,1).setFormulaR1C1('=R[0]C[-10]+XLOOKUP(R[0]C[-12],RemediationPolicyTimelines!R1C1:R4C1,RemediationPolicyTimelines!R1C2:R4C2)');
 
@@ -115,6 +126,7 @@ function importCodeScanningVulnerabilitiesToSheet() {
     lastRow = allCodeScanningVulnerabilities.length
     var valueToDelete = new Date(null);
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up Fixed At empty dates...</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Fixed At' Column
     columnNumber = COL_CS_FIXED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
@@ -127,6 +139,7 @@ function importCodeScanningVulnerabilitiesToSheet() {
       }
     }
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up Dismissed At empty dates...</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Dismissed At' Column
     columnNumber = COL_CS_DISMISSED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
@@ -144,6 +157,8 @@ function importCodeScanningVulnerabilitiesToSheet() {
     const CS_SEV_HIGH = 'high';
     const CS_SEV_MODERATE = 'medium';
     const CS_SEV_LOW = 'low';
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Normalizing severity ratings...</p>').setTitle('Import Progress'));
 
     columnNumber = COL_CS_SEVERITY;
     var dataNormalizationRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
