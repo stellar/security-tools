@@ -54,7 +54,6 @@ function getScriptProperties() {
   const userProperties = PropertiesService.getUserProperties();
   const githubEnterpriseUrl = properties.getProperty('GITHUB_ENTERPRISE_URL');
   const githubOrg = properties.getProperty('GITHUB_ORG');
-  //const githubToken = properties.getProperty('GITHUB_TOKEN');
   let githubToken = userProperties.getProperty('GITHUB_TOKEN');
   if (githubToken === null) {
     const ui = SpreadsheetApp.getUi();
