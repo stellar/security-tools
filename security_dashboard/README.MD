@@ -3,4 +3,3 @@ The Security Dashboard is designed to pull data from disparate sources, normaliz
 Key Metrics (still WIP)
 - MTTR
 - Vulnerability Trending by Severity over time
-- 
