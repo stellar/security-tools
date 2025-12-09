@@ -54,7 +54,6 @@ function getScriptProperties() {
   const userProperties = PropertiesService.getUserProperties();
   const githubEnterpriseUrl = properties.getProperty('GITHUB_ENTERPRISE_URL');
   const githubOrg = properties.getProperty('GITHUB_ORG');
-  //const githubToken = properties.getProperty('GITHUB_TOKEN');
   let githubToken = userProperties.getProperty('GITHUB_TOKEN');
   if (githubToken === null) {
     const ui = SpreadsheetApp.getUi();
@@ -401,7 +400,7 @@ function importDependabotVulnerabilitiesToSheet() {
 
     ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up AutoDismissedAt empty dates!</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Auto Dismissed At' Column
-    columnNumber = COL_DP_AUTO_DISMISSED_AT;
+    var columnNumber = COL_DP_AUTO_DISMISSED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
     var values = dateCleanupRange.getValues();
 

@@ -211,9 +211,9 @@ function dataSynch_AllVulnerabilities() {
     ui.showSidebar(HtmlService.createHtmlOutput('<p>Merging bug bounty results into universal tab...</p>').setTitle('Import Progress'));
     //  - Jira Bug Bounty
     const jiraBugbountyRange = jiraBugBountySheet.getDataRange();
-    lastRow = jiraBugbountyRange.getLastRow();
-    jiraBugBountyVulns = jiraBugbountyRange.getValues();
-    for(i=1;i<lastRow;i++){
+    var lastRow = jiraBugbountyRange.getLastRow();
+    var jiraBugBountyVulns = jiraBugbountyRange.getValues();
+    for(var i=1;i<lastRow;i++){
       allVulns.push([
         jiraBugBountyVulns[i][COL_BB_TEAM_NAME-1],
         jiraBugBountyVulns[i][COL_BB_PROJECT_NAME-1],
@@ -252,8 +252,8 @@ function dataSynch_AllVulnerabilities() {
     //  - Audit Imports
     const auditImportsRange = auditImportsSheet.getDataRange();
     lastRow = auditImportsRange.getLastRow();
-    auditImportsVulns = auditImportsRange.getValues();
-    for(i=1;i<lastRow;i++){
+    var auditImportsVulns = auditImportsRange.getValues();
+    for(var i=1;i<lastRow;i++){
       allVulns.push([
         auditImportsVulns[i][COL_AV_TEAM_NAME-1],    //Using AV columns since date for Audit table is the same as the all vulns table to provide maximum flexibility
         auditImportsVulns[i][COL_AV_PROJECT_NAME-1],

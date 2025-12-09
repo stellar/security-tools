@@ -52,7 +52,7 @@ const COL_CS_PROJECT_NAME = 2;
 const COL_CS_REPO_NAME = 3;
 const COL_CS_SEVERITY = 4;
 const COL_CS_SUMMARY = 5;
-const COL_CREATED_AT = 6;
+const COL_CS_CREATED_AT = 6;
 const COL_CS_DISMISSED_AT = 7;
 const COL_CS_DISMISS_COMMENT = 8;
 const COL_CS_DISMISSER_NAME = 9;
@@ -128,7 +128,7 @@ function importCodeScanningVulnerabilitiesToSheet() {
 
     ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up Fixed At empty dates...</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Fixed At' Column
-    columnNumber = COL_CS_FIXED_AT;
+    var columnNumber = COL_CS_FIXED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
     var values = dateCleanupRange.getValues();
 

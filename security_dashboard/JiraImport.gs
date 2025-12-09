@@ -224,7 +224,7 @@ function importBugBountyVulnerabilitiesToSheet(){
 
     ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up Fixed At empty dates...</p>').setTitle('Import Progress'));
     //Clear out any default blank dates in 'Fixed At' Column
-    columnNumber = COL_BB_FIXED_AT;
+    var columnNumber = COL_BB_FIXED_AT;
     var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
     var values = dateCleanupRange.getValues();
 
@@ -267,7 +267,45 @@ function importBugBountyVulnerabilitiesToSheet(){
           break;
       }
     }
+//
+//
+//
+//
+/***
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating Team <-> Repo mapping...').setTitle('Import Progress'));
+    //Set Team Repo Mapping
+    sheet.getRange(2,COL_CS_TEAM_NAME,allCodeScanningVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[2],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C1:R300C1)),\"\",xlookup(R[0]C[2],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C1:R300C1))");   //Set reference formulas for calculated data - Team name lookup
 
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating Project <-> Repo mapping...').setTitle('Import Progress'));
+    //Set Project Repo Mapping
+    sheet.getRange(2,COL_CS_PROJECT_NAME,allCodeScanningVulnerabilities.length,1).setFormulaR1C1("=If(isna(xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C2:R300C2)),\"\",xlookup(R[0]C[1],\'Project-Repo Mappings\'!R1C3:R300C3,\'Project-Repo Mappings\'!R1C2:R300C2))");   //Set reference formulas for calculated data - Project name lookup
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating days opened calculation...').setTitle('Import Progress'));
+    //Set Days Opened calculation - =If(Not(isBlank(DISMISSED_AT)),datedif(CREATED_AT,DISMISSED_AT,"D"),If(Not(isBlank(FIXED_AT)),datedif(CREATED_AT,FIXED_AT,"D"), datedif(CREATED_AT,today(),"D")))
+    sheet.getRange(2,COL_CS_DAYS_OPENED,allCodeScanningVulnerabilities.length,1).setFormulaR1C1('=If(Not(isBlank(R[0]C[-8])),datedif(R[0]C[-9],R[0]C[-8],"D"),If(Not(isBlank(R[0]C[-4])),datedif(R[0]C[-9],R[0]C[-4],"D"),datedif(R[0]C[-9],today(),"D")))');
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Updating remediation deadline calculation...').setTitle('Import Progress'));
+    //Set Remediation Deadline Calculation - =CREATED_AT+XLOOKUP(SEVERITY,RemediationPolicyTimelines!$A$1:$A$4,RemediationPolicyTimelines!$B$1:$B$4)
+    sheet.getRange(2,COL_CS_REMEDIATION_DEADLINE,allCodeScanningVulnerabilities.length,1).setFormulaR1C1('=R[0]C[-10]+XLOOKUP(R[0]C[-12],RemediationPolicyTimelines!R1C1:R4C1,RemediationPolicyTimelines!R1C2:R4C2)');
+
+    //DATA CLEANUP and Normalization
+    startRow = 2;
+    lastRow = allCodeScanningVulnerabilities.length
+    var valueToDelete = new Date(null);
+
+    ui.showSidebar(HtmlService.createHtmlOutput('<p>Cleaning up Fixed At empty dates...</p>').setTitle('Import Progress'));
+    //Clear out any default blank dates in 'Fixed At' Column
+    columnNumber = COL_CS_FIXED_AT;
+    var dateCleanupRange = sheet.getRange(startRow, columnNumber, lastRow, 1);
+    var values = dateCleanupRange.getValues();
+
+    // Iterate through the values and clear cells matching the target value
+    for (var i = 0; i < values.length; i++) {
+      if (values[i][0].getTime() == valueToDelete.getTime()) {
+        sheet.getRange(i + startRow, columnNumber).clearContent();
+      }
+    }
+*/
 
 
     ui.showSidebar(HtmlService.createHtmlOutput('<p>Jira Bounties Import complete!</p>').setTitle('Import Progress'));
@@ -279,3 +317,57 @@ function importBugBountyVulnerabilitiesToSheet(){
   }
   
 }
+
+/**
+ * Helper function to safely extract data from the complex Jira issue object.
+ * You can customize this to find your specific custom fields.
+ *
+ * @param {Object} issue - The Jira issue object.
+ * @param {string} fieldName - The name of the field we want (from FIELDS_TO_IMPORT).
+ * @param {string} jiraDomain - The Jira domain to build links.
+ * @return {string|Date} The extracted value.
+ 
+function getJiraField(issue, fieldName, jiraDomain) {
+  const fields = issue.fields;
+  try {
+    switch (fieldName) {
+      case "Key":
+        return issue.key;
+      case "Link":
+        return `https://${jiraDomain}/browse/${issue.key}`;
+      case "Summary":
+        return fields.summary;
+      case "Status":
+        return fields.status ? fields.status.name : "N/A";
+      case "Assignee":
+        return fields.assignee ? fields.assignee.displayName : "Unassigned";
+      case "Reporter":
+        return fields.reporter ? fields.reporter.displayName : "N/A";
+      case "Created":
+        return fields.created ? new Date(fields.created) : null;
+      case "Updated":
+        return fields.updated ? new Date(fields.updated) : null;
+
+      // --- Example for a custom field ---
+      // Jira custom fields have names like "customfield_10010".
+      // Find the name by exporting an issue as JSON from Jira.
+      // Let's say "Severity" is "customfield_10025".
+      case "Severity":
+        // For custom fields with a simple value (e.g., dropdown)
+        return fields.customfield_10025 ? fields.customfield_10025.value : "N/A";
+
+      // Default case for any other fields
+      default:
+        // Try to find a field with the exact name (case-insensitive)
+        for (const key in fields) {
+          if (key.toLowerCase() === fieldName.toLowerCase()) {
+            return fields[key];
+          }
+        }
+        return "Not Found";
+    }
+  } catch (e) {
+    Logger.log(`Error parsing field "${fieldName}" for issue ${issue.key}: ${e}`);
+    return "Parse Error";
+  }
+}  */

@@ -32,13 +32,13 @@ function getSecretsVulnerabilitiesForOrg(orgName, token) {
     const response = UrlFetchApp.fetch(secretsAPIUrl, options);
     const responseCode = response.getResponseCode();
     const responseBody = response.getContentText();
-    Logger.log(responseBody);
+    //Logger.log(responseBody);
     //ui.alert(responseBody);
     
     
     if (responseCode !== 200) {
       // Log the error response from GitHub for debugging
-      Logger.log(`Error from GitHub API: ${responseBody}`);
+      //Logger.log(`Error from GitHub API: ${responseBody}`);    //Uncomment for debugging
       throw new Error(`Failed to fetch data. GitHub API responded with code: ${responseCode}. Check Logs for details.`);
     }
 
