@@ -82,12 +82,12 @@ function dataSynch_AllVulnerabilities() {
     const COL_AV_REMEDIATION_DEADLINE = 29;
     const COL_AV_SOURCE = 30;
 
-    allVulns = [];
+    let allVulns = [];
     ui.showSidebar(HtmlService.createHtmlOutput('<p>Merging dependabot results into universal tab...</p>').setTitle('Import Progress'));
     //Load Dependabot Vulns
     const dependabotRange = dependabotSheet.getDataRange();
-    lastRow = dependabotRange.getLastRow();
-    dependabotVulns = dependabotRange.getValues();
+    var lastRow = dependabotRange.getLastRow();
+    var dependabotVulns = dependabotRange.getValues();
     for(i=1;i<lastRow;i++) { //Starting at index 1 skips header row, which doesn't apply to the universal vulns sheet
       //Subtracting one for all column constants because arrays are 0 indexed, but the columns are 1 indexed
       allVulns.push( [
@@ -181,7 +181,7 @@ function dataSynch_AllVulnerabilities() {
         codeScanningVulns[i][COL_CS_SEVERITY-1],
         codeScanningVulns[i][COL_CS_SUMMARY-1],
         '',
-        (codeScanningVulns[i][COL_CREATED_AT-1]=='')?'':new Date(codeScanningVulns[i][COL_CREATED_AT-1]),
+        (codeScanningVulns[i][COL_CS_CREATED_AT-1]=='')?'':new Date(codeScanningVulns[i][COL_CS_CREATED_AT-1]),
         '',
         '',
         '',
@@ -294,7 +294,7 @@ function dataSynch_AllVulnerabilities() {
       allVulnsSheet.getRange(2, 1, allVulns.length, headers.length).setValues(allVulns);
     }
 
-    startRow = 2;
+    const startRow = 2;
     lastRow = allVulns.length;
     columnNumber = COL_AV_SEVERITY;
     var dataNormalizationRange = allVulnsSheet.getRange(startRow, columnNumber, lastRow, 1);

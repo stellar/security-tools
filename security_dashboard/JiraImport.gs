@@ -58,7 +58,7 @@ function getJiraScriptProperties() {
 
 function getJiraVulnerabilityImportsforOrg(JiraURL, JiraEmail, JiraAPIToken) {
  /***
-  * URL for issue linkhttps://stellarorg.atlassian.net/browse/SE-1324 
+  * Example URL for issue link https://your-org.atlassian.net/browse/issue-number 
   */ 
 
   let JiraBase = JiraURL+"/rest/api/latest/search/jql?jql=";

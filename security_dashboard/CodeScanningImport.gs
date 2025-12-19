@@ -32,13 +32,13 @@ function getCodeScanningVulnerabilitiesForOrg(orgName, token) {
     
   if (responseCode !== 200) {
     if (responseCode === 404) {
-      throw new Error(`Organization '${ORG_NAME}' not found or Code Scanning is not enabled.`);
+      throw new Error(`Organization '${orgName}' not found or Code Scanning is not enabled.`);
     }
     if (responseCode === 401) {
       throw new Error("Authentication failed. Check if your GITHUB_TOKEN is correct and has the right scopes.");
     }
     // Log the full error for debugging
-    Logger.log(responseText);
+    Logger.log(responseBody);
     throw new Error(`GitHub API request failed with code ${responseCode}.`);
   }
 

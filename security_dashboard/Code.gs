@@ -13,7 +13,7 @@
  * AUDIT_SHEET_NAME: Audit_Import
  * GH_CODESCANNING_SHEET_NAME: GHAS_CodeScanning_Import
  * GH_DEPENDABOT_SHEET_NAME: GHAS_Dependabot_Import
- * GH_SECRETSSSCANNING_SHEET_NAME: GHAS_Secrets_Import
+ * GH_SECRETSSCANNING_SHEET_NAME: GHAS_Secrets_Import
  * GITHUB_ENTERPRISE_URL: https://github.com/enterprises/stellar-development-foundation
  * GITHUB_ORG: stellar
  * JIRA_BUGBOUNTY_SHEET_NAME: Jira_BugBounty_Import
@@ -344,7 +344,7 @@ function importDependabotVulnerabilitiesToSheet() {
                 new Date (vuln.fixedAt),
                 vuln.state,
                 vuln.securityVulnerability.advisory.ghsaId,
-                "https://github.com/stellar/"+repoName+"/security/dependabot/"+vuln.number,
+                "https://github.com/"+githubOrg+"/"+repoName+"/security/dependabot/"+vuln.number,
                 vuln.vulnerableManifestFilename,
                 vuln.vulnerableManifestPath,
                 "'"+vuln.vulnerableRequirements,
@@ -392,8 +392,8 @@ function importDependabotVulnerabilitiesToSheet() {
     }
 
     //DATA CLEANUP
-    startRow = 2;
-    lastRow = allVulnerabilities.length
+    var startRow = 2;
+    var lastRow = allVulnerabilities.length
     //var valueToDelete = new Date('12/31/1969 19:00:00');
     //var valueToDelete = new Date('');
     var valueToDelete = new Date(null);
@@ -455,9 +455,4 @@ function importDependabotVulnerabilitiesToSheet() {
 
 function sheetName() {
   return SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getName();
-}
-
-function testDates() {
-  var myDateToDelete = new Date(null);
-  //return myDateToDelete;
 }
