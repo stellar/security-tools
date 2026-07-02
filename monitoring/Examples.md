@@ -59,7 +59,7 @@ Soroban-based vault and yield-aggregation platform with strategy rebalancing.
 | Monitor | What it detects | Example Severity |
 |---|---|---|
 | Vault Deployment | Deployment of new DeFindex vaults via the factory | Info |
-| Large Deposits into Vault > x | Vault deposits exceeding a threshold amount | Warning |
+| Large Deposit into Vault | Vault deposits exceeding a threshold amount | Warning |
 | Emergency Rescue Operation | Emergency rescue operations on vaults (admin-key signal — legitimate or compromised) | Critical |
 
 ---
