@@ -1,4 +1,4 @@
-# Smart Contract Monitoring on Stellar — Example Projects & Monitors
+# Monitoring on Stellar — Native Operations & Smart Contracts (Example Projects & Monitors)
 
 ## Summary
 
