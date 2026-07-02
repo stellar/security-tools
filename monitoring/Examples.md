@@ -72,7 +72,7 @@ Decentralized oracle protocol providing price feeds to the Stellar DeFi ecosyste
 
 | Monitor | What it detects | Example Severity |
 |---|---|---|
-| Price Update Published > x% | Price updates with deltas exceeding a percentage threshold | Warning |
+| Price Update Published Beyond Threshold | Price updates with deltas exceeding a percentage threshold | Warning |
 | Price Feed Goes Stale | Expected periodic price updates failing to arrive within a staleness window | Critical |
 | Asset Feed Added / Removed | Assets added to or removed from the oracle's tracked universe | Warning |
 | Admin Transaction Submitted | Admin transactions on the oracle contract (governance-significant) | Info |
