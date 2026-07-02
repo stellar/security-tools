@@ -46,7 +46,7 @@ Stellar-native permissionless lending protocol with pools, backstops, and liquid
 | Pool Utilization Above Threshold | Pool utilization approaching or exceeding its configured ceiling | Critical |
 | Backstop Withdrawal | Completed withdrawals from the backstop module (insiders exiting) | Critical |
 | Backstop Queued Withdrawal | Intent signal preceding backstop withdrawal — sophisticated LPs queuing ahead of stress | Warning |
-| Oracle Price Update Beyond x% | Oracle price changes exceeding a percentage threshold (volatility or manipulation) | Warning |
+| Oracle Price Update Beyond Threshold | Oracle price changes exceeding a percentage threshold (volatility or manipulation) | Warning |
 
 ---
 
