@@ -1,0 +1,11 @@
+{
+  "workspace": ".",
+  "rust_sast_enabled": true,
+  "sast_ignore_overrides": "rust-unsafe-usage:soroban_fuzzing/host_env/fuzz_targets/host_funcs.rs,rust-unsafe-usage:soroban_fuzzing/host_env/fuzz_targets/new_host_funcs.rs",
+  "secret_scanning_enabled": true,
+  "console_tabular_enabled": true,
+  "dockerfiles": "soroban_fuzzing/host_env/dockerfile",
+  "socket_tier_1_enabled": false,
+  "trivy_vuln_enabled": false,
+  "trufflehog_exclude_dir": "target,.git"
+}
